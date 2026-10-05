@@ -56,6 +56,20 @@ h2.t{font-size:1.7rem;font-weight:900;color:var(--g2);margin:4px 0 14px;border-i
 .q input[type=text]{width:100%;padding:8px 12px;border:1px solid var(--bd);border-radius:8px}
 .ans{margin-top:8px;font-weight:700;color:var(--ok)}
 .note{background:#fff3cd;border:1px solid #e0b84a;border-radius:8px;padding:8px 12px;margin-top:8px;font-weight:600}
+.timer{position:sticky;top:var(--hh,88px);z-index:9;background:#fff8e1;border:2px solid var(--gold);border-radius:10px;padding:6px 14px;margin:8px 0;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.timer.low{background:#fdecea;border-color:var(--bad);color:var(--bad)}.timer b{font-size:1.25rem;letter-spacing:1px}
+.score input.nm{width:92%;max-width:380px;text-align:center;background:rgba(255,255,255,.15);border:0;border-bottom:2px solid #fff;color:#fff;font-size:1.2rem;font-weight:700;margin-bottom:8px;padding:4px}
+.score input.nm::placeholder{color:#e6e6e6}.score small b{color:#ffe08a}
+.paper{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:22px;margin-bottom:16px;color:#000}
+.paper h2{text-align:center;margin:6px 0;font-size:1.3rem}.paper h3.sec{margin:16px 0 4px;font-size:1.05rem;border-bottom:1.5px solid #333;padding-bottom:2px}
+.paper input.pi{border:0;border-bottom:1px dashed #888;width:100%;text-align:center;font-size:1.15rem;font-weight:700;background:none;font-family:inherit}
+.pmeta{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:12px 0;font-weight:600}
+.bl{display:inline-block;min-width:110px;border-bottom:1.5px solid #333;height:1em;vertical-align:baseline}
+.pq{margin:7px 0;line-height:1.9}.popts{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin:0 22px}
+.lines{height:84px;background:repeating-linear-gradient(transparent,transparent 27px,#888 28px);margin:4px 22px 8px}
+.keygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:2px 10px}
+.pctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:14px}
+.pctl select{padding:6px;border:1px solid var(--bd);border-radius:8px}
 .grp{margin:22px 0 8px;color:var(--g2);border-bottom:2px solid var(--gold);padding-bottom:4px;font-size:1.15rem}
 .modes{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:14px 0}
 .mode{background:var(--card);border:2px solid var(--bd);border-radius:14px;padding:16px;cursor:pointer;text-align:right;display:flex;flex-direction:column;gap:4px}
@@ -90,7 +104,13 @@ h2.t{font-size:1.7rem;font-weight:900;color:var(--g2);margin:4px 0 14px;border-i
 }
 /* ===== طباعة ===== */
 @media print{
- header,aside,.tabs,.bar,#toast,.noprint{display:none!important}
+ header,aside,.tabs,.bar,#toast,.noprint,.timer{display:none!important}
+ @page{margin:14mm}
+ .paper{border:0;padding:0;font-size:13pt}.pq,.keyrow{break-inside:avoid}
+ #paperKey{break-before:page}
+ body[data-print=q] #paperKey{display:none!important}
+ body[data-print=k] #paperQ{display:none!important}
+ body[data-print=k] #paperKey{break-before:auto}
  body{background:#fff}.wrap{display:block}main{max-width:none;padding:0}
  .card,.q{break-inside:avoid;border:1px solid #999}.tabpane{display:block!important}
 }
@@ -122,6 +142,7 @@ h2.t{font-size:1.7rem;font-weight:900;color:var(--g2);margin:4px 0 14px;border-i
 const CONFIG = {
   siteName: 'المنظومة التعليمية',
   siteSub: 'شروحات وملخصات وأسئلة تفاعلية لجميع الصفوف',
+  examSecondsPerQuestion: 30,          // زمن كل سؤال بالثواني لحساب مدة الامتحان
   features: { print: true, scoring: true, showAnswers: true, shuffleOptions: true }
 };
 
@@ -348,7 +369,7 @@ DEFAULT_DB.grades[8].subjects.push({
 <div class="card"><h3>١. في أسرته</h3>
 <p>كان ﷺ مثالًا للمربّي الفاضل في أسرته: يتفقّد شؤون أهله ويرعاهم، ويعطف على أولاده، ويعمل على تنشئتهم التنشئة السليمة، ويغمرهم بعطفه وحنانه.</p>
 <div class="hadith">عن أنس رضي الله عنه قال: دخلنا مع رسول الله ﷺ على أبي سيف القين، وكان ظئرًا لإبراهيم، فأخذ رسول الله ﷺ إبراهيم فقبّله وشمّه... فجعلت عينا رسول الله ﷺ تذرفان، فقال له عبد الرحمن بن عوف: وأنت يا رسول الله! فقال: «يا ابن عوف إنها رحمة»، ثم أتبعها بأخرى فقال: «إن العين تدمع والقلب يحزن، ولا نقول إلا ما يرضي ربنا، وإنا بفراقك يا إبراهيم لمحزونون». <small>(أخرجه البخاري)</small></div><br>
-<div class="hadith">وعن عبد الله بن شدّاد عن أبيه قال: خرج علينا رسول الله ﷺ في إحدى صلاتي العشيّ وهو حامل حسنًا أو حسينًا، فوضعه ثم كبّر للصلاة فصلّى، فسجد بين ظهراني صلاته سجدة أطالها... فلما قضى صلاته قال الناس: إنك سجدت سجدة أطلتها حتى ظننا أنه قد حدث أمر! فقال: «كل ذلك لم يكن، ولكن ابني ارتحلني فكرهت أن أعجّله حتى يقضي حاجته». <small>(رواه النسائي)</small></div><br>
+<div class="hadith">وعن عبد الله بن شدّاد عن أبيه قال: خرج علينا رسول الله ﷺ في إحدى صلاتي العشيّ (الظهر أو العصر) وهو حامل حسنًا أو حسينًا، فوضعه ثم كبّر للصلاة فصلّى، فسجد بين ظهراني صلاته سجدة أطالها... فلما قضى صلاته قال الناس: إنك سجدت سجدة أطلتها حتى ظننا أنه قد حدث أمر! فقال: «كل ذلك لم يكن، ولكن ابني ارتحلني فكرهت أن أعجّله حتى يقضي حاجته». <small>(رواه النسائي)</small></div><br>
 <div class="hadith">وعن أبي هريرة رضي الله عنه قال: قبّل رسول الله ﷺ الحسن بن علي، فقال الأقرع بن حابس: إن لي عشرة من الولد ما قبّلت منهم أحدًا، فقال النبي ﷺ: «من لا يرحم لا يُرحم». <small>(أخرجه البخاري)</small></div>
 <p>وقد جعل ﷺ مسؤولية الأسرة منوطة بربّ الأسرة عندما قال: «كلكم راعٍ وكلكم مسؤول عن رعيّته» (أخرجه البخاري)، ومن المسؤولية: العطف والحنان والرحمة.</p>
 <p>لكن مع كل مظاهر الرحمة كان ﷺ يحثّ على <b>التوسّط في الأمور</b>، ومنها التربية، فلا إفراط في المحبة حتى ينشأ الفرد مدلّلًا ضعيفًا، ولا تفريط حتى لا يرى الفرد غير القسوة والشدة، بل رحمة وحنان وشفقة وبرّ وتعليم وتوجيه وتربية وإرشاد، فإذا تطلّب الموقف بعض الشدة في غير عنف كان كذلك، وإلا فالتوجيه والإرشاد.</p>
@@ -375,6 +396,7 @@ DEFAULT_DB.grades[8].subjects.push({
       'شهد له بذلك <b>صفوان بن أمية</b> الذي أسلم بعد غزوة حنين.',
       'ربّى الصحابة على المنهج السليم، وكان لهم القدوة والأسوة الحسنة.',
       'في أسرته: يتفقّد أهله ويعطف على أولاده (تقبيل إبراهيم، وحمل الحسن أو الحسين في الصلاة، وتقبيل الحسن).',
+      'صلاتا العشيّ هما <b>الظهر والعصر</b>؛ وقد خرج النبي ﷺ في إحداهما وهو حامل الحسن أو الحسين، فسجد سجدة أطالها حتى لا يعجّل الطفل الذي ركب على ظهره (رواه النسائي).',
       'قال ﷺ للأقرع بن حابس: «من لا يرحم لا يُرحم».',
       'مسؤولية الأسرة على ربّها: «كلكم راعٍ وكلكم مسؤول عن رعيته».',
       'التربية بالتوسط: لا إفراط في المحبة (تدليل) ولا تفريط (قسوة).',
@@ -394,6 +416,9 @@ DEFAULT_DB.grades[8].subjects.push({
       {t:'mcq',q:'من الذي شهد للنبي ﷺ بأن الله علّمه كيف يداوي القلوب المريضة؟',o:['صفوان بن أمية','الأقرع بن حابس','عبد الرحمن بن عوف','أنس بن مالك'],a:0},
       {t:'mcq',q:'سبب تخفيفه ﷺ للصلاة عند سماع بكاء الصبي:',o:['مخافة أن تُفتن أمه','لضيق الوقت','لمرضه','لتعبه'],a:0},
       {t:'mcq',q:'والدة إبراهيم ابن النبي ﷺ هي:',o:['خديجة','مارية القبطية','عائشة','حفصة'],a:1},
+      {t:'mcq',q:'المقصود بـ «صلاتي العشيّ» في حديث عبد الله بن شدّاد:',o:['الظهر والعصر','الفجر والمغرب','المغرب والعشاء','الصبح والظهر'],a:0},
+      {t:'tf',q:'صلاتا العشيّ هما الظهر والعصر.',a:true},
+      {t:'fill',q:'خرج النبي ﷺ في إحدى صلاتي العشيّ (الظهر أو ......) وهو حامل حسنًا أو حسينًا.',a:'العصر'},
       {t:'tf',q:'يقوم المنهج التربوي للنبي ﷺ على الإفراط في المحبة.',a:false},
       {t:'tf',q:'الوعد الكاذب للصبي يُعدّ كذبة.',a:true},
       {t:'tf',q:'كان ﷺ يعدّ المسلمين جميعًا أسرته الكبرى.',a:true},
@@ -1686,6 +1711,7 @@ const $ = s => document.querySelector(s);
 const norm = s => (s||'').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,' ').trim();
 function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
 let DB = JSON.parse(JSON.stringify(DEFAULT_DB));
+const fmt = sec => String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
 const OBJ = q => q.t==='mcq'||q.t==='tf'||q.t==='fill';
 const shuffle = a => {a=a.slice();for(let k=a.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[a[k],a[r]]=[a[r],a[k]]}return a};
 
@@ -1693,7 +1719,7 @@ const shuffle = a => {a=a.slice();for(let k=a.length-1;k>0;k--){const r=Math.flo
    4) التطبيق: القائمة الجانبية + عرض الدرس + الفهرس + الامتحان
    ════════════════════════════════════════════════════════ */
 const App = {
-  cur:null, tab:'explain', view:null, examCtx:null,
+  cur:null, tab:'explain', view:null, examCtx:null, timerOn:true, school:'',
   init(){
     $('#siteName').textContent=CONFIG.siteName; $('#siteSub').textContent=CONFIG.siteSub;
     document.title=CONFIG.siteName;
@@ -1704,7 +1730,7 @@ const App = {
   toggleMenu(){const o=$('#side').classList.toggle('open');$('#shade').classList.toggle('on',o);document.body.style.overflow=o?'hidden':''},
   closeMenu(){$('#side').classList.remove('open');$('#shade').classList.remove('on');document.body.style.overflow=''},
   gs(gid,sid){const g=DB.grades.find(x=>x.id===gid);return{g,sb:g.subjects.find(x=>x.id===sid)}},
-  go(){this.cur=null;this.menu();this.closeMenu();scrollTo(0,0)},
+  go(){Quiz.stopTimer();this.cur=null;this.menu();this.closeMenu();scrollTo(0,0)},
   menu(){
     const v=this.view;
     $('#side').innerHTML = DB.grades.map(g=>`
@@ -1739,6 +1765,7 @@ const App = {
       <div class="bar noprint"><button class="btn gold" onclick="print()">🖨️ طباعة الفهرس</button></div>`;
   },
   /* ----- الامتحان الشامل ----- */
+  mins(n){return Math.max(10,Math.ceil(n*CONFIG.examSecondsPerQuestion/60))},
   examHome(gid,sid){
     const {g,sb}=this.gs(gid,sid);
     this.view={type:'exam',g:gid,s:sid};this.go();
@@ -1746,13 +1773,15 @@ const App = {
     const sum=n=>pools.reduce((a,c)=>a+Math.min(c,n),0);
     const opens=sb.lessons.reduce((a,l)=>a+(l.questions||[]).filter(q=>q.t==='open').length,0);
     const modes=[
-      ['quick','⚡ امتحان سريع','3 أسئلة موضوعية من كل درس',sum(3)+' سؤالًا'],
-      ['medium','📘 امتحان متوسط','6 أسئلة موضوعية من كل درس',sum(6)+' سؤالًا'],
-      ['full','🏆 الامتحان الشامل الكامل','كل الأسئلة الموضوعية في كل الدروس، ثم الأسئلة المقالية للمراجعة',sum(1e9)+' سؤالًا موضوعيًا + '+opens+' سؤالًا مقاليًا']];
+      ['quick','⚡ امتحان سريع','3 أسئلة موضوعية من كل درس',sum(3),''],
+      ['medium','📘 امتحان متوسط','6 أسئلة موضوعية من كل درس',sum(6),''],
+      ['full','🏆 الامتحان الشامل الكامل','كل الأسئلة الموضوعية في كل الدروس، ثم الأسئلة المقالية للمراجعة',sum(1e9),' + '+opens+' سؤالًا مقاليًا']];
     $('#main').innerHTML=`<div class="crumb">${g.name} ‹ ${sb.name}</div><h2 class="t">الامتحان الشامل</h2>
-      <div class="card"><p>يغطي الامتحان <b>جميع دروس المادة (${sb.lessons.length} درسًا)</b>، وتُرتَّب أسئلته بحسب الدروس، وتتبدّل الأسئلة وخيارات الإجابة في كل مرة. بعد التصحيح ترى درجتك العامة، ونتيجتك في <b>كل درس على حدة</b> مع تنبيه للدروس التي تحتاج مراجعة.</p></div>
-      <div class="modes">${modes.map(m=>`<button class="mode" onclick="App.startExam('${gid}','${sid}','${m[0]}')"><b>${m[1]}</b><span>${m[2]}</span><em>${m[3]}</em></button>`).join('')}</div>
-      <div class="bar noprint"><button class="btn gold" onclick="App.reviewAll('${gid}','${sid}')">📚 مراجعة: ملخص النقاط المهمة لجميع الدروس</button></div>`;
+      <div class="card"><p>يغطي الامتحان <b>جميع دروس المادة (${sb.lessons.length} درسًا)</b>، وتُرتَّب أسئلته بحسب الدروس، وتتبدّل الأسئلة وخيارات الإجابة في كل مرة. بعد التصحيح ترى درجتك العامة ونتيجتك في <b>كل درس على حدة</b> مع تنبيه للدروس التي تحتاج مراجعة، ويمكنك كتابة اسمك في شاشة النتيجة لتصويرها وإرسالها لمعلمك (لا يُحفظ شيء).</p>
+      <label class="opt"><input type="checkbox" ${this.timerOn?'checked':''} onchange="App.timerOn=this.checked"> ⏱ تفعيل المؤقّت (يُسلَّم الامتحان تلقائيًا عند انتهاء الوقت)</label></div>
+      <div class="modes">${modes.map(m=>`<button class="mode" onclick="App.startExam('${gid}','${sid}','${m[0]}')"><b>${m[1]}</b><span>${m[2]}</span><em>${m[3]} سؤالًا موضوعيًا${m[4]}</em><span>⏱ المدة: ${this.mins(m[3])} دقيقة</span></button>`).join('')}</div>
+      <div class="bar noprint"><button class="btn gold" onclick="App.examPaper('${gid}','${sid}')">🖨️ ورقة امتحان للطباعة (مع مفتاح الإجابات)</button>
+      <button class="btn" onclick="App.reviewAll('${gid}','${sid}')">📚 مراجعة: ملخص النقاط المهمة لجميع الدروس</button></div>`;
   },
   startExam(gid,sid,mode){
     const {g,sb}=this.gs(gid,sid);
@@ -1764,11 +1793,56 @@ const App = {
       if(mode==='full')(l.questions||[]).filter(q=>q.t==='open').forEach(q=>essays.push({...q,lt:'أسئلة مقالية — '+l.title,lid:l.id}));
     });
     qs=qs.concat(essays);
-    const tot=qs.filter(OBJ).length,label={quick:'السريع',medium:'المتوسط',full:'الكامل'}[mode];
+    const tot=qs.filter(OBJ).length,label={quick:'السريع',medium:'المتوسط',full:'الكامل'}[mode],mn=this.mins(tot);
     $('#main').innerHTML=`<div class="crumb">${g.name} ‹ ${sb.name}</div><h2 class="t">الامتحان الشامل (${label})</h2>
-      <div class="cnt"><span class="bdg ok">عدد الأسئلة المحتسبة: ${tot}</span><span class="bdg">الدروس: ${sb.lessons.length}</span></div>
+      <div class="cnt"><span class="bdg ok">عدد الأسئلة المحتسبة: ${tot}</span><span class="bdg">الدروس: ${sb.lessons.length}</span>${this.timerOn?`<span class="bdg">⏱ المدة: ${mn} دقيقة</span>`:''}</div>
+      ${this.timerOn?`<div class="timer" id="timerBar"><span>⏱ الوقت المتبقي</span><b id="timerTxt">${fmt(mn*60)}</b></div>`:''}
       ${Quiz.render(qs,`App.startExam('${gid}','${sid}','${mode}')`,`App.examHome('${gid}','${sid}')`)}`;
+    if(this.timerOn)Quiz.startTimer(mn);
+    scrollTo(0,0);
   },
+  /* ----- ورقة امتحان للطباعة + مفتاح الإجابات ----- */
+  examPaper(gid,sid,per,ess){
+    const {g,sb}=this.gs(gid,sid);
+    this.view={type:'exam',g:gid,s:sid};this.go();
+    per=+per||2; ess=+ess||0; this.paperCfg={per,ess};
+    const mc=[],tf=[],fl=[];
+    sb.lessons.forEach(l=>shuffle((l.questions||[]).filter(OBJ)).slice(0,per).forEach(q=>(q.t==='mcq'?mc:q.t==='tf'?tf:fl).push(q)));
+    const op=shuffle(sb.lessons.flatMap(l=>(l.questions||[]).filter(q=>q.t==='open'))).slice(0,ess);
+    const A=['أ','ب','ج','د','هـ'],blank=t=>t.replace(/\.{4,}/g,'<span class="bl">&nbsp;</span>');
+    const obj=mc.length+tf.length+fl.length, total=obj+op.length*4;
+    let n=0,Q='',K='',secNo=0;const AR=['الأول','الثاني','الثالث','الرابع'];
+    const sec=(t,m)=>`<h3 class="sec">السؤال ${AR[secNo++]}: ${t} <small>(${m})</small></h3>`;
+    if(mc.length){Q+=sec('اختر الإجابة الصحيحة','درجة لكل فقرة');K+=`<h3 class="sec">السؤال الأول (اختيار من متعدد)</h3><div class="keygrid">`;
+      shuffle(mc).forEach(q=>{n++;const perm=shuffle(q.o.map((_,j)=>j));
+        Q+=`<div class="pq"><b>${n}.</b> ${blank(q.q)}<div class="popts">${perm.map((j,k)=>`<span>${A[k]}) ${q.o[j]}</span>`).join('')}</div></div>`;
+        K+=`<div class="keyrow"><b>${n}</b> ← ${A[perm.indexOf(q.a)]}</div>`});K+='</div>'}
+    if(tf.length){Q+=sec('ضع علامة (✓) أمام العبارة الصحيحة وعلامة (✗) أمام العبارة الخاطئة','درجة لكل فقرة');K+=`<h3 class="sec">السؤال (صح وخطأ)</h3><div class="keygrid">`;
+      shuffle(tf).forEach(q=>{n++;Q+=`<div class="pq"><b>${n}.</b> ( &nbsp;&nbsp;&nbsp;&nbsp; ) ${q.q}</div>`;K+=`<div class="keyrow"><b>${n}</b> ← ${q.a?'✓ صح':'✗ خطأ'}</div>`});K+='</div>'}
+    if(fl.length){Q+=sec('أكمل الفراغ بما يناسبه','درجة لكل فقرة');K+=`<h3 class="sec">السؤال (إكمال)</h3>`;
+      shuffle(fl).forEach(q=>{n++;Q+=`<div class="pq"><b>${n}.</b> ${blank(q.q)}</div>`;K+=`<div class="keyrow"><b>${n}</b> ← ${q.a}</div>`})}
+    if(op.length){Q+=sec('أجب عن الأسئلة الآتية','4 درجات لكل سؤال');K+=`<h3 class="sec">الأسئلة المقالية (إجابات نموذجية)</h3>`;
+      op.forEach(q=>{n++;Q+=`<div class="pq"><b>${n}.</b> ${q.q}<div class="lines"></div></div>`;K+=`<div class="keyrow"><b>${n}. ${q.q}</b><br>${q.a}</div>`})}
+    $('#main').innerHTML=`<div class="crumb">${g.name} ‹ ${sb.name}</div><h2 class="t">ورقة امتحان للطباعة</h2>
+      <div class="pctl noprint">
+        <label>عدد الأسئلة الموضوعية من كل درس: <select id="pPer">${[1,2,3,4,5].map(x=>`<option ${x===per?'selected':''}>${x}</option>`).join('')}</select></label>
+        <label>الأسئلة المقالية: <select id="pEss">${[0,3,5,8].map(x=>`<option ${x===ess?'selected':''}>${x}</option>`).join('')}</select></label>
+        <button class="btn gold" onclick="App.examPaper('${gid}','${sid}',$('#pPer').value,$('#pEss').value)">🔄 ورقة جديدة</button>
+      </div>
+      <div class="pctl noprint"><button class="btn" onclick="App.printPaper('q')">🖨️ طباعة ورقة الأسئلة</button><button class="btn red" onclick="App.printPaper('k')">🔑 طباعة مفتاح الإجابات</button><button class="btn gold" onclick="App.printPaper('all')">🖨️ طباعة الكل</button><button class="btn" onclick="App.examHome('${gid}','${sid}')">رجوع</button></div>
+      <p class="hint noprint">الورقة تغطي كل الدروس (${sb.lessons.length} درسًا)، وتتبدل أسئلتها وترتيبها عند كل «ورقة جديدة». اطبع ورقة الأسئلة للطلاب والمفتاح لنفسك.</p>
+      <div class="paper" id="paperQ">
+        <input class="pi" id="pSchool" placeholder="اكتب اسم المدرسة هنا" value="${this.school}" oninput="App.school=this.value">
+        <h2>امتحان شامل في مادة ${sb.name} — ${g.name}</h2>
+        <div class="pmeta"><div>اسم الطالب: <span class="bl" style="min-width:180px">&nbsp;</span></div><div>الفصل: <span class="bl">&nbsp;</span></div>
+          <div>التاريخ: <span class="bl">&nbsp;</span></div><div>الزمن: <span class="bl" style="min-width:60px">&nbsp;</span> دقيقة</div>
+          <div style="grid-column:1/-1">الدرجة: <span class="bl" style="min-width:60px">&nbsp;</span> / <b>${total}</b></div></div>
+        ${Q}
+        <p style="text-align:center;margin-top:18px">— انتهت الأسئلة، مع التمنيات بالتوفيق —</p></div>
+      <div class="paper" id="paperKey"><h2>مفتاح الإجابات — ${sb.name} — ${g.name}</h2>
+        <p style="text-align:center">الدرجة الكلية: ${total} (${obj} درجة للأسئلة الموضوعية${op.length?` + ${op.length*4} للمقالية`:''})</p>${K}</div>`;
+  },
+  printPaper(kind){document.body.dataset.print=kind;window.print();setTimeout(()=>{delete document.body.dataset.print},800)},
   reviewAll(gid,sid){
     const {g,sb}=this.gs(gid,sid);
     this.view={type:'exam',g:gid,s:sid};this.go();
@@ -1795,13 +1869,19 @@ const App = {
    5) الاختبار: تصحيح + نقاط + إظهار الإجابة + نتيجة كل درس
    ════════════════════════════════════════════════════════ */
 const Quiz = {
-  cur:[],
+  cur:[], name:'', t0:0, timer:null,
+  startTimer(mins){this.stopTimer();const end=Date.now()+mins*60000;
+    const upd=()=>{const left=Math.max(0,Math.round((end-Date.now())/1000)),t=$('#timerTxt'),b=$('#timerBar');
+      if(!t){this.stopTimer();return}t.textContent=fmt(left);if(b)b.classList.toggle('low',left<=300);
+      if(left<=0){this.stopTimer();this.check(true)}};
+    upd();this.timer=setInterval(upd,1000)},
+  stopTimer(){if(this.timer){clearInterval(this.timer);this.timer=null}},
   html(l){
     this.cur=l.questions||[]; if(!this.cur.length) return '<div class="card">لا توجد أسئلة بعد.</div>';
     return this.render(this.cur,"App.render();App.tab='quiz';App.render()");
   },
   render(qs,again,back){
-    this.cur=qs; let last=null;
+    this.cur=qs; this.t0=Date.now(); let last=null;
     return qs.map((q,i)=>{
       const head=(q.lt&&q.lt!==last)?(last=q.lt,`<h3 class="grp">📘 ${q.lt}</h3>`):'';
       return head+`<div class="q" id="q${i}"><b class="n">${i+1}.</b> ${q.q}
@@ -1816,8 +1896,9 @@ const Quiz = {
   },
   order(q){const idx=q.o.map((_,j)=>j);return CONFIG.features.shuffleOptions?shuffle(idx):idx},
   reveal(i){const a=$('#a'+i);a.className='ans model';a.innerHTML='💡 الإجابة النموذجية: '+Quiz.cur[i].a},
-  check(){
+  check(auto){
     const qs=Quiz.cur; let pts=0; const st={};
+    const wasTimed=!!Quiz.timer; Quiz.stopTimer(); const tb=$('#timerBar'); if(tb){tb.classList.remove('low');tb.innerHTML=auto?'⏰ انتهى الوقت — تم التسليم تلقائيًا':'✔ تم تسليم الامتحان'}
     const tot=qs.filter(OBJ).length;
     qs.forEach((q,i)=>{
       if(q.t==='note')return;
@@ -1850,7 +1931,18 @@ const Quiz = {
           <td>${pp<70?`<button class="btn noprint" style="padding:3px 12px" onclick="App.open('${ctx.g}','${ctx.s}','${id}','summary')">راجع الدرس</button>`:'✔'}</td></tr>`}).join('')}
         </tbody></table></div>`;
       }
-      $('#res').innerHTML=`<div class="score">نتيجتك: ${pts} من ${tot} (${p}%)<small>الأسئلة المقالية غير محتسبة في الدرجة</small><small>${p>=90?'🌟 ممتاز!':p>=70?'👏 جيد جدًا':p>=50?'👍 جيد، راجع الملخص':'📖 راجع الدروس وأعد المحاولة'}</small></div>${per}`;
+      let where='';
+      if(ctx){const o=App.gs(ctx.g,ctx.s);where=o.g.name+' — '+o.sb.name+' — الامتحان الشامل'}
+      else if(App.cur){const f=App.find();where=f.g.name+' — '+f.s.name+' — '+f.l.title}
+      const el=Math.round((Date.now()-Quiz.t0)/1000), dt=new Date().toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'});
+      $('#res').innerHTML=`${auto?'<div class="score" style="background:#c0392b;margin-bottom:8px">⏰ انتهى الوقت — تم التسليم تلقائيًا</div>':''}
+        <div class="score"><input class="nm" id="stName" placeholder="✍️ اكتب اسمك هنا" value="${Quiz.name}" oninput="Quiz.name=this.value">
+        <small>${where}</small>
+        نتيجتك: ${pts} من ${tot} (${p}%)
+        <small>⏱ المدة المستغرقة: <b>${fmt(el)}</b> · 📅 ${dt}</small>
+        <small>الأسئلة المقالية غير محتسبة في الدرجة</small>
+        <small>${p>=90?'🌟 ممتاز!':p>=70?'👏 جيد جدًا':p>=50?'👍 جيد، راجع الملخص':'📖 راجع الدروس وأعد المحاولة'}</small></div>
+        <p class="hint noprint">📸 اكتب اسمك ثم التقط صورة لشاشة النتيجة وأرسلها لمعلمك. لا يُحفظ الاسم ولا النتيجة في أي مكان.</p>${per}`;
       $('#res').scrollIntoView({behavior:'smooth'});
     }
   }
