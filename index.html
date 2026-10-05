@@ -21,7 +21,8 @@ header p{margin:0;font-size:.85rem;opacity:.85}
 #menuBtn{display:none}
 /* ===== التخطيط ===== */
 .wrap{display:flex;min-height:calc(100vh - 88px)}
-aside{width:290px;background:var(--card);border-inline-end:1px solid var(--bd);padding:14px;overflow:auto;height:calc(100vh - 88px);position:sticky;top:88px;flex:none}
+aside{width:290px;background:var(--card);border-inline-end:1px solid var(--bd);padding:14px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;height:calc(100vh - var(--hh,88px));height:calc(100dvh - var(--hh,88px));position:sticky;top:var(--hh,88px);flex:none}
+#shade{display:none}
 main{flex:1;padding:22px;max-width:960px}
 details{margin-bottom:6px}
 summary{cursor:pointer;font-weight:700;padding:8px 10px;border-radius:8px;background:#f1efe6}
@@ -55,6 +56,11 @@ h2.t{font-size:1.7rem;font-weight:900;color:var(--g2);margin:4px 0 14px;border-i
 .q input[type=text]{width:100%;padding:8px 12px;border:1px solid var(--bd);border-radius:8px}
 .ans{margin-top:8px;font-weight:700;color:var(--ok)}
 .note{background:#fff3cd;border:1px solid #e0b84a;border-radius:8px;padding:8px 12px;margin-top:8px;font-weight:600}
+.grp{margin:22px 0 8px;color:var(--g2);border-bottom:2px solid var(--gold);padding-bottom:4px;font-size:1.15rem}
+.modes{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:14px 0}
+.mode{background:var(--card);border:2px solid var(--bd);border-radius:14px;padding:16px;cursor:pointer;text-align:right;display:flex;flex-direction:column;gap:4px}
+.mode:hover{border-color:var(--g);background:#f1f8f5}.mode b{font-size:1.1rem;color:var(--g2)}.mode span{color:var(--mut);font-size:.9rem}.mode em{font-style:normal;font-weight:700;color:var(--g)}
+.meter{height:10px;background:#e6e3d6;border-radius:6px;overflow:hidden;min-width:90px}.meter i{display:block;height:100%;background:var(--ok)}.meter.low i{background:var(--bad)}
 .idx-table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden}
 .idx-table th{background:var(--g);color:#fff;padding:8px;text-align:right}
 .idx-table td{border-bottom:1px solid var(--bd);padding:8px}
@@ -72,27 +78,19 @@ h2.t{font-size:1.7rem;font-weight:900;color:var(--g2);margin:4px 0 14px;border-i
 .score small{display:block;font-weight:400;font-size:.95rem}
 .bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 /* ===== الإدارة ===== */
-#admin{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50;overflow:auto;padding:20px}
-#admin.show{display:block}
-.panel{background:#fff;max-width:760px;margin:auto;border-radius:16px;padding:22px}
-.panel h3{margin-top:0;color:var(--g2)}
-.panel fieldset{border:1px solid var(--bd);border-radius:10px;margin:0 0 14px}
-.panel legend{font-weight:700;color:var(--g);padding:0 8px}
-.panel input,.panel select,.panel textarea{width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;margin:4px 0 8px}
-.panel textarea{min-height:90px}
-.row{display:flex;gap:8px}.row>*{flex:1}
 .hint{font-size:.82rem;color:var(--mut);background:#faf8f0;padding:6px 10px;border-radius:8px}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--g2);color:#fff;padding:10px 22px;border-radius:30px;display:none;z-index:99}
 /* ===== جوال ===== */
 @media(max-width:800px){
  #menuBtn{display:block}
- aside{position:fixed;top:88px;right:0;z-index:15;transform:translateX(100%);transition:.25s;box-shadow:-4px 0 20px rgba(0,0,0,.2);width:280px}
+ aside{position:fixed;top:calc(var(--hh,88px) + 10px);bottom:0;height:auto;padding-top:22px;padding-bottom:120px;right:0;z-index:15;transform:translateX(100%);transition:.25s;box-shadow:-4px 0 20px rgba(0,0,0,.2);width:280px}
  aside.open{transform:none}
+ #shade.on{display:block;position:fixed;inset:0;top:var(--hh,88px);background:rgba(0,0,0,.4);z-index:14}
  main{padding:14px}.hbtns .hb span{display:none}
 }
 /* ===== طباعة ===== */
 @media print{
- header,aside,.tabs,.bar,#admin,#toast,.noprint{display:none!important}
+ header,aside,.tabs,.bar,#toast,.noprint{display:none!important}
  body{background:#fff}.wrap{display:block}main{max-width:none;padding:0}
  .card,.q{break-inside:avoid;border:1px solid #999}.tabpane{display:block!important}
 }
@@ -106,29 +104,24 @@ h2.t{font-size:1.7rem;font-weight:900;color:var(--g2);margin:4px 0 14px;border-i
   <div class="hbtns">
     <button class="hb" id="menuBtn">☰</button>
     <button class="hb" onclick="App.home()">🏠 <span>الرئيسية</span></button>
-    <button class="hb" id="adminBtn" style="display:none" onclick="Admin.open()">⚙️ <span>الإدارة</span></button>
   </div>
 </header>
 
 <div class="wrap">
   <aside id="side"></aside>
+  <div id="shade" onclick="App.closeMenu()"></div>
   <main id="main"></main>
 </div>
 
-<!-- ===== لوحة الإدارة ===== -->
-<div id="admin"><div class="panel" id="adminBody"></div></div>
 <div id="toast"></div>
 
 <script>
 /* ════════════════════════════════════════════════════════
-   1) الإعدادات — عدّل هنا اسم المنصة وكلمة سر الإدارة
+   1) الإعدادات — عدّل هنا اسم المنصة والميزات
    ════════════════════════════════════════════════════════ */
 const CONFIG = {
   siteName: 'المنظومة التعليمية',
   siteSub: 'شروحات وملخصات وأسئلة تفاعلية لجميع الصفوف',
-  adminPassword: 'admin123',          // غيّرها قبل الرفع
-  adminRoute: 'admin2033',            // رابط الإدارة السري: ...الموقع/#admin2033 أو ...الموقع/admin2033/
-  storageKey: 'edu_db_v1',
   features: { print: true, scoring: true, showAnswers: true, shuffleOptions: true }
 };
 
@@ -1692,46 +1685,46 @@ DEFAULT_DB.grades[8].subjects.push({
 const $ = s => document.querySelector(s);
 const norm = s => (s||'').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,' ').trim();
 function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
-const Store = {
-  load(){const def=JSON.parse(JSON.stringify(DEFAULT_DB));
-    try{const d=localStorage.getItem(CONFIG.storageKey);if(d){const db=JSON.parse(d);
-      db.grades.forEach(g=>g.subjects.forEach(sb=>{if(!sb.index){const dg=def.grades.find(x=>x.id===g.id),ds=dg&&dg.subjects.find(x=>x.id===sb.id);if(ds&&ds.index)sb.index=ds.index}}));
-      return db}}catch(e){}
-    return def},
-  save(){try{localStorage.setItem(CONFIG.storageKey,JSON.stringify(DB))}catch(e){toast('تعذّر الحفظ')}}
-};
-let DB = Store.load();
+let DB = JSON.parse(JSON.stringify(DEFAULT_DB));
+const OBJ = q => q.t==='mcq'||q.t==='tf'||q.t==='fill';
+const shuffle = a => {a=a.slice();for(let k=a.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[a[k],a[r]]=[a[r],a[k]]}return a};
 
 /* ════════════════════════════════════════════════════════
-   4) التطبيق: القائمة الجانبية + عرض الدرس
+   4) التطبيق: القائمة الجانبية + عرض الدرس + الفهرس + الامتحان
    ════════════════════════════════════════════════════════ */
 const App = {
-  cur:null, tab:'explain',
+  cur:null, tab:'explain', view:null, examCtx:null,
   init(){
     $('#siteName').textContent=CONFIG.siteName; $('#siteSub').textContent=CONFIG.siteSub;
     document.title=CONFIG.siteName;
-    $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
+    $('#menuBtn').onclick=()=>this.toggleMenu();
+    const hh=()=>document.documentElement.style.setProperty('--hh',($('header').offsetHeight||88)+'px');hh();addEventListener('resize',hh);addEventListener('load',hh);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(hh);
     this.menu(); this.home();
-    Admin.route(); window.addEventListener('hashchange',()=>Admin.route());
   },
+  toggleMenu(){const o=$('#side').classList.toggle('open');$('#shade').classList.toggle('on',o);document.body.style.overflow=o?'hidden':''},
+  closeMenu(){$('#side').classList.remove('open');$('#shade').classList.remove('on');document.body.style.overflow=''},
+  gs(gid,sid){const g=DB.grades.find(x=>x.id===gid);return{g,sb:g.subjects.find(x=>x.id===sid)}},
+  go(){this.cur=null;this.menu();this.closeMenu();scrollTo(0,0)},
   menu(){
+    const v=this.view;
     $('#side').innerHTML = DB.grades.map(g=>`
-      <details ${this.cur&&this.cur.g===g.id?'open':''}><summary>📚 ${g.name}</summary>
+      <details ${(this.cur&&this.cur.g===g.id)||(v&&v.g===g.id)?'open':''}><summary>📚 ${g.name}</summary>
       ${g.subjects.length? g.subjects.map(s=>`<div class="sub">${s.name}</div>`+
-        (s.index?`<button class="les ${this.idx&&this.idx.s===s.id?'on':''}" onclick="App.showIndex('${g.id}','${s.id}')">📑 الفهرس: المقرر وغير المقرر</button>`:'')+
+        (s.index?`<button class="les ${v&&v.type==='index'&&v.s===s.id?'on':''}" onclick="App.showIndex('${g.id}','${s.id}')">📑 الفهرس: المقرر وغير المقرر</button>`:'')+
+        (s.lessons.length?`<button class="les ${v&&v.type==='exam'&&v.s===s.id?'on':''}" onclick="App.examHome('${g.id}','${s.id}')">📝 الامتحان الشامل</button>`:'')+
         s.lessons.map(l=>`<button class="les ${this.cur&&this.cur.l===l.id?'on':''}" onclick="App.open('${g.id}','${s.id}','${l.id}')">${l.title}</button>`).join('')
         ).join('') : '<div class="soon">قريبًا…</div>'}
       </details>`).join('');
   },
   home(){
-    this.cur=null;this.idx=null; this.menu();
+    this.cur=null;this.view=null; this.menu();
     $('#main').innerHTML=`<div class="home"><img src="photo.jpg" alt="">
       <h2>${CONFIG.siteName}</h2><p>${CONFIG.siteSub}</p>
       <p class="noprint">اختر الصف والدرس من القائمة الجانبية لتبدأ 👈</p></div>`;
   },
   showIndex(gid,sid){
-    const g=DB.grades.find(x=>x.id===gid),sb=g.subjects.find(x=>x.id===sid);
-    this.cur=null;this.idx={g:gid,s:sid};this.menu();$('#side').classList.remove('open');
+    const {g,sb}=this.gs(gid,sid);
+    this.view={type:'index',g:gid,s:sid};this.go();
     const have=new Set(sb.lessons.map(l=>l.id));
     const rows=sb.index.map(r=>({...r,ok:!!(r.lesson&&have.has(r.lesson))}));
     const yes=rows.filter(r=>r.ok).length,no=rows.length-yes;
@@ -1744,9 +1737,48 @@ const App = {
       </tbody></table></div>
       <p class="hint noprint">اضغط على أي درس «مقرر» لفتحه. الدروس «غير المقررة» هي التي لم تُضَف إلى الموقع بعد.</p>
       <div class="bar noprint"><button class="btn gold" onclick="print()">🖨️ طباعة الفهرس</button></div>`;
-    scrollTo(0,0)},
+  },
+  /* ----- الامتحان الشامل ----- */
+  examHome(gid,sid){
+    const {g,sb}=this.gs(gid,sid);
+    this.view={type:'exam',g:gid,s:sid};this.go();
+    const pools=sb.lessons.map(l=>(l.questions||[]).filter(OBJ).length);
+    const sum=n=>pools.reduce((a,c)=>a+Math.min(c,n),0);
+    const opens=sb.lessons.reduce((a,l)=>a+(l.questions||[]).filter(q=>q.t==='open').length,0);
+    const modes=[
+      ['quick','⚡ امتحان سريع','3 أسئلة موضوعية من كل درس',sum(3)+' سؤالًا'],
+      ['medium','📘 امتحان متوسط','6 أسئلة موضوعية من كل درس',sum(6)+' سؤالًا'],
+      ['full','🏆 الامتحان الشامل الكامل','كل الأسئلة الموضوعية في كل الدروس، ثم الأسئلة المقالية للمراجعة',sum(1e9)+' سؤالًا موضوعيًا + '+opens+' سؤالًا مقاليًا']];
+    $('#main').innerHTML=`<div class="crumb">${g.name} ‹ ${sb.name}</div><h2 class="t">الامتحان الشامل</h2>
+      <div class="card"><p>يغطي الامتحان <b>جميع دروس المادة (${sb.lessons.length} درسًا)</b>، وتُرتَّب أسئلته بحسب الدروس، وتتبدّل الأسئلة وخيارات الإجابة في كل مرة. بعد التصحيح ترى درجتك العامة، ونتيجتك في <b>كل درس على حدة</b> مع تنبيه للدروس التي تحتاج مراجعة.</p></div>
+      <div class="modes">${modes.map(m=>`<button class="mode" onclick="App.startExam('${gid}','${sid}','${m[0]}')"><b>${m[1]}</b><span>${m[2]}</span><em>${m[3]}</em></button>`).join('')}</div>
+      <div class="bar noprint"><button class="btn gold" onclick="App.reviewAll('${gid}','${sid}')">📚 مراجعة: ملخص النقاط المهمة لجميع الدروس</button></div>`;
+  },
+  startExam(gid,sid,mode){
+    const {g,sb}=this.gs(gid,sid);
+    this.view={type:'exam',g:gid,s:sid};this.examCtx={g:gid,s:sid,mode};this.go();
+    const per={quick:3,medium:6,full:1e9}[mode];
+    let qs=[],essays=[];
+    sb.lessons.forEach(l=>{
+      shuffle((l.questions||[]).filter(OBJ)).slice(0,per).forEach(q=>qs.push({...q,lt:l.title,lid:l.id}));
+      if(mode==='full')(l.questions||[]).filter(q=>q.t==='open').forEach(q=>essays.push({...q,lt:'أسئلة مقالية — '+l.title,lid:l.id}));
+    });
+    qs=qs.concat(essays);
+    const tot=qs.filter(OBJ).length,label={quick:'السريع',medium:'المتوسط',full:'الكامل'}[mode];
+    $('#main').innerHTML=`<div class="crumb">${g.name} ‹ ${sb.name}</div><h2 class="t">الامتحان الشامل (${label})</h2>
+      <div class="cnt"><span class="bdg ok">عدد الأسئلة المحتسبة: ${tot}</span><span class="bdg">الدروس: ${sb.lessons.length}</span></div>
+      ${Quiz.render(qs,`App.startExam('${gid}','${sid}','${mode}')`,`App.examHome('${gid}','${sid}')`)}`;
+  },
+  reviewAll(gid,sid){
+    const {g,sb}=this.gs(gid,sid);
+    this.view={type:'exam',g:gid,s:sid};this.go();
+    $('#main').innerHTML=`<div class="crumb">${g.name} ‹ ${sb.name}</div><h2 class="t">ملخص النقاط المهمة لجميع الدروس</h2>
+      ${sb.lessons.map((l,i)=>`<div class="card sum"><h3>${i+1}. ${l.title}</h3><ul>${(l.summary||[]).map(x=>`<li>${x}</li>`).join('')}</ul>
+        <button class="btn noprint" style="padding:4px 14px" onclick="App.open('${gid}','${sid}','${l.id}')">فتح الدرس</button></div>`).join('')}
+      <div class="bar noprint"><button class="btn" onclick="App.examHome('${gid}','${sid}')">📝 العودة إلى الامتحان</button><button class="btn gold" onclick="print()">🖨️ طباعة الملخص</button></div>`;
+  },
   find(){const g=DB.grades.find(x=>x.id===this.cur.g),s=g.subjects.find(x=>x.id===this.cur.s);return{g,s,l:s.lessons.find(x=>x.id===this.cur.l)}},
-  open(g,s,l){this.idx=null;this.cur={g,s,l};this.tab='explain';this.menu();$('#side').classList.remove('open');this.render();scrollTo(0,0)},
+  open(g,s,l,tab){this.view=null;this.cur={g,s,l};this.tab=tab||'explain';this.menu();this.closeMenu();this.render();scrollTo(0,0)},
   render(){
     const {g,s,l}=this.find();
     const tabs=[['explain','📖 الشرح'],['summary','📝 الملخص'],['quiz','✅ الأسئلة']];
@@ -1760,27 +1792,34 @@ const App = {
 };
 
 /* ════════════════════════════════════════════════════════
-   5) الاختبار: تصحيح + نقاط + إظهار الإجابة
+   5) الاختبار: تصحيح + نقاط + إظهار الإجابة + نتيجة كل درس
    ════════════════════════════════════════════════════════ */
 const Quiz = {
+  cur:[],
   html(l){
-    const qs=l.questions||[]; if(!qs.length) return '<div class="card">لا توجد أسئلة بعد.</div>';
-    return qs.map((q,i)=>`<div class="q" id="q${i}"><b class="n">${i+1}.</b> ${q.q}
+    this.cur=l.questions||[]; if(!this.cur.length) return '<div class="card">لا توجد أسئلة بعد.</div>';
+    return this.render(this.cur,"App.render();App.tab='quiz';App.render()");
+  },
+  render(qs,again,back){
+    this.cur=qs; let last=null;
+    return qs.map((q,i)=>{
+      const head=(q.lt&&q.lt!==last)?(last=q.lt,`<h3 class="grp">📘 ${q.lt}</h3>`):'';
+      return head+`<div class="q" id="q${i}"><b class="n">${i+1}.</b> ${q.q}
       ${q.t==='mcq'?Quiz.order(q).map(j=>`<label class="opt"><input type="radio" name="q${i}" value="${j}"> ${q.o[j]}</label>`).join(''):''}
       ${q.t==='tf'?['صح','خطأ'].map((o,j)=>`<label class="opt"><input type="radio" name="q${i}" value="${j?'0':'1'}"> ${o}</label>`).join(''):''}
       ${q.t==='fill'?`<input type="text" name="q${i}" placeholder="اكتب إجابتك هنا">`:''}
       ${q.t==='note'?`<div class="note">⚠️ ملاحظة: ${q.a}</div>`:''}
       ${q.t==='open'?`<textarea name="q${i}" placeholder="اكتب إجابتك بأسلوبك ثم قارنها بالإجابة النموذجية"></textarea><button type="button" class="btn gold noprint" style="margin-top:6px;padding:6px 16px" onclick="Quiz.reveal(${i})">💡 عرض الإجابة النموذجية</button>`:''}
-      <div class="ans" id="a${i}"></div></div>`).join('')+
+      <div class="ans" id="a${i}"></div></div>`}).join('')+
       `<div class="bar noprint"><button class="btn" onclick="Quiz.check()">تصحيح الإجابات</button>
-      <button class="btn red" onclick="App.render();App.tab='quiz';App.render()">إعادة المحاولة</button></div><div id="res"></div>`;
+      <button class="btn red" onclick="${again}">${back?'امتحان جديد':'إعادة المحاولة'}</button>${back?`<button class="btn gold" onclick="${back}">رجوع</button>`:''}</div><div id="res"></div>`;
   },
-  order(q){const idx=q.o.map((_,j)=>j);if(CONFIG.features.shuffleOptions)for(let k=idx.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[idx[k],idx[r]]=[idx[r],idx[k]]}return idx},
-  reveal(i){const {l}=App.find();const a=$('#a'+i);a.className='ans model';a.innerHTML='💡 الإجابة النموذجية: '+l.questions[i].a},
+  order(q){const idx=q.o.map((_,j)=>j);return CONFIG.features.shuffleOptions?shuffle(idx):idx},
+  reveal(i){const a=$('#a'+i);a.className='ans model';a.innerHTML='💡 الإجابة النموذجية: '+Quiz.cur[i].a},
   check(){
-    const {l}=App.find(); let pts=0;
-    const tot=l.questions.filter(q=>q.t!=='open'&&q.t!=='note').length;
-    l.questions.forEach((q,i)=>{
+    const qs=Quiz.cur; let pts=0; const st={};
+    const tot=qs.filter(OBJ).length;
+    qs.forEach((q,i)=>{
       if(q.t==='note')return;
       if(q.t==='open'){Quiz.reveal(i);return}
       const box=$('#q'+i), n=`[name=q${i}]`; let ok=false, shown='';
@@ -1796,88 +1835,25 @@ const Quiz = {
         });
       }
       if(ok)pts++;
+      if(q.lid){const o=st[q.lid]=st[q.lid]||{t:q.lt,ok:0,tot:0};o.tot++;if(ok)o.ok++}
       box.className='q '+(ok?'right':'wrong');
       $('#a'+i).innerHTML=ok?'✔ إجابة صحيحة':(CONFIG.features.showAnswers?'✘ الإجابة الصحيحة: '+shown:'✘ إجابة خاطئة');
       if(q.t==='fill')$(n).disabled=true;
     });
     if(CONFIG.features.scoring){
-      const p=tot?Math.round(pts/tot*100):0;
-      $('#res').innerHTML=`<div class="score">نتيجتك: ${pts} من ${tot} (${p}%)<small>الأسئلة المقالية غير محتسبة في الدرجة</small><small>${p>=90?'🌟 ممتاز!':p>=70?'👏 جيد جدًا':p>=50?'👍 جيد، راجع الملخص':'📖 راجع الدرس وأعد المحاولة'}</small></div>`;
+      const p=tot?Math.round(pts/tot*100):0, ctx=App.examCtx&&App.view&&App.view.type==='exam'?App.examCtx:null;
+      let per='';
+      if(ctx&&Object.keys(st).length){
+        per=`<h3 class="grp">📊 نتيجتك في كل درس</h3><div style="overflow-x:auto"><table class="idx-table"><thead><tr><th>الدرس</th><th>الدرجة</th><th>النسبة</th><th></th></tr></thead><tbody>
+        ${Object.keys(st).map(id=>{const o=st[id],pp=Math.round(o.ok/o.tot*100);return `<tr><td>${o.t}</td><td>${o.ok} / ${o.tot}</td>
+          <td><div class="meter ${pp<70?'low':''}"><i style="width:${pp}%"></i></div>${pp}%</td>
+          <td>${pp<70?`<button class="btn noprint" style="padding:3px 12px" onclick="App.open('${ctx.g}','${ctx.s}','${id}','summary')">راجع الدرس</button>`:'✔'}</td></tr>`}).join('')}
+        </tbody></table></div>`;
+      }
+      $('#res').innerHTML=`<div class="score">نتيجتك: ${pts} من ${tot} (${p}%)<small>الأسئلة المقالية غير محتسبة في الدرجة</small><small>${p>=90?'🌟 ممتاز!':p>=70?'👏 جيد جدًا':p>=50?'👍 جيد، راجع الملخص':'📖 راجع الدروس وأعد المحاولة'}</small></div>${per}`;
       $('#res').scrollIntoView({behavior:'smooth'});
     }
   }
-};
-
-/* ════════════════════════════════════════════════════════
-   6) لوحة الإدارة — إضافة صفوف/مواد/دروس/أسئلة
-   لإضافة ميزة جديدة: أضف مفتاحًا في CONFIG.features ثم استخدمه
-   ════════════════════════════════════════════════════════ */
-const Admin = {
-  ok:false,
-  route(){
-    const r=CONFIG.adminRoute, h=(location.hash||'').replace('#',''), q=location.search||'';
-    if(h===r||q.includes(r)){const b=$('#adminBtn');if(b)b.style.display='';this.open()}
-  },
-  open(){
-    if(!this.ok){const p=prompt('كلمة سر الإدارة:');if(p!==CONFIG.adminPassword){if(p!==null)toast('كلمة السر خاطئة');return}this.ok=true}
-    this.draw();$('#admin').classList.add('show');
-  },
-  close(){$('#admin').classList.remove('show')},
-  opts(arr,sel){return arr.map(x=>`<option value="${x.id}" ${x.id===sel?'selected':''}>${x.name||x.title}</option>`).join('')},
-  draw(keep){
-    const gid=(keep&&keep.g)||(this.g||DB.grades[8].id); this.g=gid;
-    const gr=DB.grades.find(x=>x.id===gid), sid=(gr.subjects.find(s=>s.id===this.s)?this.s:(gr.subjects[0]||{}).id); this.s=sid;
-    const sj=gr.subjects.find(s=>s.id===sid);
-    $('#adminBody').innerHTML=`
-    <h3>⚙️ لوحة الإدارة <button class="btn red" style="float:left;padding:4px 14px" onclick="Admin.close()">إغلاق</button></h3>
-    <fieldset><legend>الموقع الحالي</legend><div class="row">
-      <select onchange="Admin.g=this.value;Admin.s=null;Admin.draw()">${this.opts(DB.grades,gid)}</select>
-      <select onchange="Admin.s=this.value;Admin.draw()">${gr.subjects.length?this.opts(gr.subjects,sid):'<option>لا مواد</option>'}</select></div></fieldset>
-
-    <fieldset><legend>➕ إضافة مادة للصف</legend>
-      <input id="nSub" placeholder="اسم المادة (مثال: اللغة العربية)"><button class="btn" onclick="Admin.addSub()">إضافة المادة</button></fieldset>
-
-    <fieldset><legend>➕ إضافة درس للمادة المختارة</legend>
-      <input id="nTitle" placeholder="عنوان الدرس">
-      <textarea id="nExp" placeholder="الشرح (يمكن استخدام HTML مثل &lt;p&gt; و &lt;b&gt; و &lt;h3&gt;)"></textarea>
-      <textarea id="nSum" placeholder="الملخص — كل نقطة في سطر مستقل"></textarea>
-      <textarea id="nQ" placeholder="الأسئلة — كل سؤال في سطر"></textarea>
-      <div class="hint">صيغ الأسئلة:<br>mcq|السؤال|خيار1;خيار2;خيار3|رقم الصحيح (يبدأ من 0)<br>tf|السؤال|صح أو خطأ<br>fill|السؤال|الإجابة<br>open|السؤال|الإجابة النموذجية (سؤال مقالي بدون درجة)<br>note|السؤال|ملاحظة تحذير (سؤال بلا إجابة، للمراجعة مع المعلم)</div><br>
-      <button class="btn" onclick="Admin.addLesson()">حفظ الدرس</button></fieldset>
-
-    <fieldset><legend>🗑️ دروس المادة</legend>
-      ${sj&&sj.lessons.length?sj.lessons.map(l=>`<div class="row" style="align-items:center"><span>${l.title}</span><button class="btn red" style="flex:none" onclick="Admin.delLesson('${l.id}')">حذف</button></div>`).join(''):'لا توجد دروس'}</fieldset>
-
-    <fieldset><legend>⚡ الميزات</legend>
-      ${Object.keys(CONFIG.features).map(k=>`<label style="display:block"><input type="checkbox" style="width:auto" ${CONFIG.features[k]?'checked':''} onchange="CONFIG.features['${k}']=this.checked;App.cur&&App.render()"> ${k}</label>`).join('')}</fieldset>
-
-    <fieldset><legend>💾 نسخ احتياطي</legend>
-      <button class="btn gold" onclick="Admin.exp()">تصدير البيانات (JSON)</button>
-      <input type="file" id="imp" accept=".json" style="margin-top:8px" onchange="Admin.imp(this.files[0])">
-      <button class="btn red" onclick="if(confirm('سيتم مسح كل تعديلاتك. متأكد؟')){localStorage.removeItem(CONFIG.storageKey);location.reload()}">استرجاع الافتراضي</button>
-      <div class="hint">التعديلات تُحفظ في متصفحك فقط. لجعلها دائمة لكل الزوار: صدّر JSON وانسخ محتواه إلى DEFAULT_DB في الملف.</div></fieldset>`;
-  },
-  uid:p=>p+'-'+Date.now().toString(36),
-  cur(){const g=DB.grades.find(x=>x.id===this.g);return{g,s:g.subjects.find(x=>x.id===this.s)}},
-  done(m){Store.save();App.menu();toast(m);this.draw()},
-  addSub(){const n=$('#nSub').value.trim();if(!n)return toast('اكتب اسم المادة');
-    const {g}=this.cur();const s={id:this.uid('s'),name:n,lessons:[]};g.subjects.push(s);this.s=s.id;this.done('تمت إضافة المادة')},
-  addLesson(){
-    const {s}=this.cur();if(!s)return toast('أضف مادة أولًا');
-    const title=$('#nTitle').value.trim();if(!title)return toast('اكتب عنوان الدرس');
-    const questions=$('#nQ').value.split('\n').map(x=>x.trim()).filter(Boolean).map(r=>{
-      const p=r.split('|').map(x=>x.trim());
-      if(p[0]==='mcq')return{t:'mcq',q:p[1],o:(p[2]||'').split(';').map(x=>x.trim()),a:+p[3]||0};
-      if(p[0]==='tf')return{t:'tf',q:p[1],a:p[2]==='صح'};
-      if(p[0]==='fill')return{t:'fill',q:p[1],a:p[2]};
-      if(p[0]==='open')return{t:'open',q:p[1],a:p[2]};
-      if(p[0]==='note')return{t:'note',q:p[1],a:p[2]};
-      return null}).filter(Boolean);
-    s.lessons.push({id:this.uid('l'),title,explain:$('#nExp').value,summary:$('#nSum').value.split('\n').map(x=>x.trim()).filter(Boolean),questions});
-    this.done('تم حفظ الدرس ('+questions.length+' سؤال)')},
-  delLesson(id){if(!confirm('حذف الدرس؟'))return;const {s}=this.cur();s.lessons=s.lessons.filter(l=>l.id!==id);App.cur=null;App.home();this.done('تم الحذف')},
-  exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,1)],{type:'application/json'}));a.download='edu-data.json';a.click()},
-  imp(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{DB=JSON.parse(r.result);Store.save();App.cur=null;App.init();this.draw();toast('تم الاستيراد')}catch(e){toast('ملف غير صالح')}};r.readAsText(f)}
 };
 
 App.init();
