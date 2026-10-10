@@ -1,6 +1,6 @@
 /* Service Worker — المنظومة التعليمية
    غيّر رقم VERSION عند الحاجة لإجبار تحديث الكاش. */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'tighya-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './photo.jpg'];
 
@@ -34,6 +34,12 @@ self.addEventListener('fetch', e => {
     return;
   }
 
+  // الصوت والفيديو: بث مباشر من الشبكة + حفظ نسخة كاملة في الخلفية، ويدعم طلبات Range دون إنترنت
+  if (url.origin === location.origin && /\.(mp3|m4a|aac|ogg|wav|mp4)$/i.test(url.pathname)) {
+    e.respondWith(handleMedia(e, req, url));
+    return;
+  }
+
   // باقي الملفات والخطوط: من الكاش فورًا مع تحديثه في الخلفية
   if (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
     e.respondWith(
@@ -50,3 +56,40 @@ self.addEventListener('fetch', e => {
     );
   }
 });
+
+const pendingMedia = new Set();
+
+async function handleMedia(e, req, url) {
+  const cache = await caches.open(CACHE);
+  const key = url.href;
+  const hit = await cache.match(key);
+
+  if (!hit) {
+    // غير محفوظ: يُشغَّل من الشبكة، ثم تُحفظ نسخة كاملة في الخلفية
+    if (!pendingMedia.has(key)) {
+      pendingMedia.add(key);
+      e.waitUntil(
+        fetch(key).then(r => { if (r.ok) return cache.put(key, r); })
+          .catch(() => {}).finally(() => pendingMedia.delete(key))
+      );
+    }
+    return fetch(req).catch(() => new Response('', { status: 503 }));
+  }
+
+  const range = req.headers.get('range');
+  if (!range) return hit;
+  const blob = await hit.blob();
+  const m = /bytes=(\d*)-(\d*)/.exec(range);
+  const size = blob.size;
+  let start = m && m[1] ? parseInt(m[1], 10) : 0;
+  let end = m && m[2] ? parseInt(m[2], 10) : size - 1;
+  end = Math.min(end, size - 1);
+  return new Response(blob.slice(start, end + 1), {
+    status: 206,
+    headers: {
+      'Content-Type': hit.headers.get('Content-Type') || 'audio/mpeg',
+      'Content-Range': 'bytes ' + start + '-' + end + '/' + size,
+      'Content-Length': String(end - start + 1)
+    }
+  });
+}
