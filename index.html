@@ -120,8 +120,29 @@ h2.t{font-size:1.7rem;font-weight:900;color:var(--g2);margin:4px 0 14px;border-i
  #shade.on{display:block;position:fixed;inset:0;top:var(--hh,88px);background:rgba(0,0,0,.4);z-index:14}
  main{padding:14px}.hbtns .hb span{display:none}
 }
+/* ===== إصلاح الاختلال في العرض (الجداول العريضة / النصوص الطويلة) ===== */
+html{-webkit-text-size-adjust:100%}
+.wrap{max-width:100%;overflow-x:clip}
+main{min-width:0;max-width:100%}              /* السبب الجذري: عنصر flex لا يتقلص عن عرض أعرض جدول */
+main img,main video,main iframe,main svg{max-width:100%;height:auto}
+audio{max-width:100%}
+h2.t,.crumb,.card h3,.card h4,.card p,.card li,.hadith,.hint,.note,summary{overflow-wrap:anywhere;word-break:normal}
+.card{max-width:100%;overflow-x:auto}           /* أي جدول أعرض من الشاشة يُمرَّر داخل بطاقته فقط */
+.card table{max-width:none}
+.idx-table th,.idx-table td{overflow-wrap:break-word}
+.tab{min-width:0}
+.tabs{max-width:100%}
+@media(max-width:800px){
+ h2.t{font-size:1.25rem;line-height:1.6}
+ .card{padding:14px 12px}
+ .idx-table{font-size:.82rem}
+ .idx-table th,.idx-table td{padding:6px 5px}
+ aside:not(.open){visibility:hidden;transition:transform .25s,visibility 0s .25s}
+ aside.open{visibility:visible;transition:transform .25s,visibility 0s}
+}
 /* ===== طباعة ===== */
 @media print{
+ .card{overflow:visible!important}
  header,aside,.tabs,.bar,#toast,.noprint,.timer{display:none!important}
  @page{margin:14mm}
  .tabpane.xtra{display:none!important}
