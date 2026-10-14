@@ -2,7 +2,8 @@
    غيّر رقم VERSION عند الحاجة لإجبار تحديث الكاش. */
 const VERSION = 'v2';
 const CACHE = 'tighya-' + VERSION;
-const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './photo.jpg'];
+const NAV_TIMEOUT = 4000; // مهلة انتظار الشبكة (مللي ثانية) قبل عرض النسخة المحفوظة
+const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './photo.jpg', './fonts/Cairo.ttf'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -22,15 +23,9 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // الصفحة: الشبكة أولًا (لتصل تحديثات الدروس فورًا) ثم الكاش عند انقطاع الإنترنت
+  // الصفحة: الشبكة أولًا (لتصل تحديثات الدروس فورًا) ثم الكاش عند انقطاع الإنترنت أو بطئه الشديد
   if (req.mode === 'navigate' || (url.origin === location.origin && url.pathname.endsWith('index.html'))) {
-    e.respondWith(
-      fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put('./index.html', copy));
-        return res;
-      }).catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
-    );
+    e.respondWith(handlePage(e, req));
     return;
   }
 
@@ -56,6 +51,28 @@ self.addEventListener('fetch', e => {
     );
   }
 });
+
+// الصفحة (نحو 3 ميغابايت): إن تأخرت الشبكة أكثر من المهلة تُعرض النسخة المحفوظة فورًا،
+// ويكتمل التحميل في الخلفية لتصل النسخة الجديدة في الزيارة التالية.
+// لا تُحفظ إلا الاستجابات السليمة (200) كي لا تحلّ صفحة خطأ محل النسخة الصالحة.
+async function handlePage(e, req) {
+  const cache = await caches.open(CACHE);
+  const fallback = () => cache.match('./index.html').then(r => r || cache.match('./'));
+  const net = fetch(req).then(res => {
+    if (res && res.ok) cache.put('./index.html', res.clone());
+    return res;
+  });
+  try {
+    const res = await Promise.race([net, new Promise(r => setTimeout(() => r(null), NAV_TIMEOUT))]);
+    if (res && res.ok) return res;
+    const hit = await fallback();
+    if (res) return hit || res;                 // استجابة خطأ من الخادم: النسخة المحفوظة أولى
+    if (hit) { e.waitUntil(net.catch(() => {})); return hit; }  // تأخرت الشبكة
+    return await net;                           // لا نسخة محفوظة: ننتظر الشبكة
+  } catch (err) {
+    return (await fallback()) || Response.error();
+  }
+}
 
 const pendingMedia = new Set();
 
