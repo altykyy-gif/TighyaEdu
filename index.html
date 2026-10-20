@@ -157,6 +157,21 @@ h2.t,.crumb,.card h3,.card h4,.card p,.card li,.hadith,.hint,.note,summary{overf
  .card,.q{break-inside:avoid;border:1px solid #999}.tabpane{display:block!important}
 }
 .nt-les{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0 8px;padding:8px 12px;background:#e8eef9;border-radius:10px}.nt-les b{font-size:1rem}.nt{border:1px solid #dcdcdc;border-right:4px solid #c0392b;border-radius:10px;padding:10px 12px;margin:8px 0;background:#fff}.nt .top{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.nt p{margin:4px 0;line-height:1.8}.nt .rs{color:#555;font-size:.93rem}
+
+/* ===== المسائل الرياضية: المعادلة في سطر واحد لا يتكسر + اضغط لتكبيرها ===== */
+.mx{white-space:nowrap!important;unicode-bidi:isolate}
+span.mx{display:inline-block;max-width:100%;overflow-x:auto;overflow-y:hidden;vertical-align:middle;line-height:1.7;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+span.mx::-webkit-scrollbar{display:none}
+div.mx{max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.mx-z{cursor:zoom-in;border-bottom:1px dotted var(--gold)}
+label.opt .mx-z{cursor:inherit;border-bottom:0}
+.mx-ov{position:fixed;inset:0;z-index:1000;background:rgba(10,30,25,.82);display:flex;align-items:center;justify-content:center;padding:12px}
+.mx-box{position:relative;background:#fff;border-radius:16px;width:100%;max-width:1100px;max-height:92vh;padding:46px 14px 14px;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.mx-x{position:absolute;top:8px;inset-inline-start:8px;width:38px;height:38px;border-radius:50%;border:0;background:var(--g);color:#fff;font-size:1.1rem;cursor:pointer}
+.mx-body{direction:ltr;overflow:auto;max-height:70vh;touch-action:pan-x pan-y pinch-zoom;font-size:clamp(1.5rem,5.5vw,2.6rem);line-height:2.2;padding:6px 4px}
+.mx-body>*{display:inline-block!important;min-width:100%;text-align:center;white-space:nowrap!important;margin:0!important;padding:0!important}
+.mx-hint{margin:8px 0 0;text-align:center;color:var(--mut);font-size:.85rem}
+@media print{.mx{overflow:visible!important;white-space:normal!important;border:0!important}.mx-ov{display:none!important}}
 </style>
 <style id="quran-g9-font-style">
 @font-face{font-family:QuranG9Amiri;src:url('fonts/quran-g9-amiri.ttf') format('truetype');font-display:swap}
@@ -5009,6 +5024,71 @@ const Quiz = {
     }
   }
 };
+
+/* ===== المسائل الرياضية: عدم كسر المعادلة + عرض مكبّر عند اللمس ===== */
+(function(){
+  const main=document.getElementById('main');
+  if(!main)return;
+  const isMath=()=>{
+    let id='';
+    try{id=App.view?(App.view.s||''):((App.cur&&App.cur.l)||'')}catch(e){}
+    return /math/i.test(id);
+  };
+  let ov=null,raf=0;
+  const closeOv=()=>{if(ov){ov.remove();ov=null;document.documentElement.style.overflow=''}};
+  function openOv(el){
+    closeOv();
+    ov=document.createElement('div');
+    ov.className='mx-ov';
+    ov.innerHTML='<div class="mx-box"><button class="mx-x" type="button" aria-label="إغلاق">✕</button><div class="mx-body"></div><p class="mx-hint">مرّر المسألة جانبيًا أو كبّرها بإصبعين، ولعرض أوسع أدِر الهاتف أفقيًا.</p></div>';
+    const c=el.cloneNode(true);
+    c.classList.remove('mx','mx-z');
+    c.removeAttribute('style');
+    c.setAttribute('dir','ltr');
+    ov.querySelector('.mx-body').appendChild(c);
+    ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('.mx-x'))closeOv()});
+    document.body.appendChild(ov);
+    document.documentElement.style.overflow='hidden';
+  }
+  /* إصلاح ترتيب الحروف العربية داخل المعادلات (س، ص، سم...) كي لا تنعكس: كل مقطع عربي يُعزل ككتلة مستقلة */
+  const W='[\\u0621-\\u0652\\u0671-\\u06D3]+';
+  const GRP=new RegExp(W+'(?:[ \\u00A0]+'+W+')*','g'), WRD=new RegExp(W,'g');
+  function isolateArabic(root){
+    const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),list=[];
+    while(tw.nextNode()){const n=tw.currentNode;if(n.parentElement&&n.parentElement.tagName!=='BDI'&&/[\u0621-\u064A]/.test(n.nodeValue))list.push(n)}
+    list.forEach(n=>{
+      const t=n.nodeValue,f=document.createDocumentFragment();let last=0,m;
+      GRP.lastIndex=0;
+      const put=s=>{const b=document.createElement('bdi');b.setAttribute('dir','rtl');b.textContent=s;f.appendChild(b)};
+      while((m=GRP.exec(t))){
+        if(m.index>last)f.appendChild(document.createTextNode(t.slice(last,m.index)));
+        const g=m[0],ws=g.match(WRD)||[];
+        if(ws.some(w=>w.length>=3)){put(g)}
+        else{let k=0;ws.forEach(w=>{const i=g.indexOf(w,k);if(i>k)f.appendChild(document.createTextNode(g.slice(k,i)));put(w);k=i+w.length})}
+        last=m.index+g.length;
+      }
+      if(last<t.length)f.appendChild(document.createTextNode(t.slice(last)));
+      n.parentNode.replaceChild(f,n);
+    });
+  }
+  function mark(){
+    raf=0;
+    if(!isMath())return;
+    main.querySelectorAll('[dir="ltr"]:not(.mx)').forEach(el=>{
+      el.classList.add('mx');
+      isolateArabic(el);
+      if((el.textContent||'').trim().length>=5)el.classList.add('mx-z');
+    });
+  }
+  new MutationObserver(()=>{if(!raf)raf=requestAnimationFrame(mark)}).observe(main,{childList:true,subtree:true});
+  main.addEventListener('click',e=>{
+    const el=e.target.closest&&e.target.closest('.mx-z');
+    if(!el||!main.contains(el))return;
+    if(el.closest('label.opt,button,input,a,summary,textarea'))return;
+    openOv(el);
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOv()});
+})();
 
 App.init();
 </script>
