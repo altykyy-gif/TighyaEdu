@@ -168,9 +168,14 @@ label.opt .mx-z{cursor:inherit;border-bottom:0}
 .mx-ov{position:fixed;inset:0;z-index:1000;background:rgba(10,30,25,.82);display:flex;align-items:center;justify-content:center;padding:12px}
 .mx-box{position:relative;background:#fff;border-radius:16px;width:100%;max-width:1100px;max-height:92vh;padding:46px 14px 14px;box-shadow:0 12px 40px rgba(0,0,0,.4)}
 .mx-x{position:absolute;top:8px;inset-inline-start:8px;width:38px;height:38px;border-radius:50%;border:0;background:var(--g);color:#fff;font-size:1.1rem;cursor:pointer}
-.mx-body{direction:ltr;overflow:auto;max-height:70vh;touch-action:pan-x pan-y pinch-zoom;font-size:clamp(1.5rem,5.5vw,2.6rem);line-height:2.2;padding:6px 4px}
+.mx-body{direction:rtl;overflow:auto;max-height:70vh;touch-action:pan-x pan-y pinch-zoom;font-size:clamp(1.5rem,5.5vw,2.6rem);line-height:2.2;padding:6px 4px}
 .mx-body>*{display:inline-block!important;min-width:100%;text-align:center;white-space:nowrap!important;margin:0!important;padding:0!important}
 .mx-hint{margin:8px 0 0;text-align:center;color:var(--mut);font-size:.85rem}
+/* كسور مكدّسة: البسط فوق المقام */
+.frac{display:inline-flex;flex-direction:column;align-items:stretch;vertical-align:middle;text-align:center;line-height:1.4;margin:0 .2em;position:relative}
+.frac>.fn{border-bottom:.09em solid currentColor;padding:0 .3em .08em}
+.frac>.fd{padding:.08em .3em 0}
+.fs{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media print{.mx{overflow:visible!important;white-space:normal!important;border:0!important}.mx-ov{display:none!important}}
 </style>
 <style id="quran-g9-font-style">
@@ -5044,7 +5049,6 @@ const Quiz = {
     const c=el.cloneNode(true);
     c.classList.remove('mx','mx-z');
     c.removeAttribute('style');
-    c.setAttribute('dir','ltr');
     ov.querySelector('.mx-body').appendChild(c);
     ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('.mx-x'))closeOv()});
     document.body.appendChild(ov);
@@ -5071,12 +5075,58 @@ const Quiz = {
       n.parentNode.replaceChild(f,n);
     });
   }
+  /* كسور مكدّسة: (أ)/(ب) تُعرض البسط فوق المقام */
+  const SUP='\u00B2\u00B3\u00B9\u2070-\u2079';
+  const TERM_RE=new RegExp('^(?:[0-9A-Za-z\u0621-\u064A\u0660-\u0669\u03B8\u03C0'+SUP+']|\\.(?=[0-9]))+');
+  const matchParen=(s,i)=>{let d=0;for(let k=i;k<s.length;k++){if(s[k]==='(')d++;else if(s[k]===')'){d--;if(!d)return k}}return -1};
+  function operandAt(s,i){
+    if(s[i]==='('){const e=matchParen(s,i);return e<0?null:{end:e+1,paren:true,text:s.slice(i,e+1)}}
+    const m=TERM_RE.exec(s.slice(i));return m?{end:i+m[0].length,paren:false,text:m[0]}:null;
+  }
+  const strip=o=>o.paren?o.text.slice(1,-1):o.text;
+  function parseFr(s){
+    const out=[];let i=0,buf='';
+    const flush=()=>{if(buf){out.push(buf);buf=''}};
+    while(i<s.length){
+      const a=operandAt(s,i);
+      if(a&&s[a.end]==='/'){
+        const b=operandAt(s,a.end+1);
+        if(b&&(a.paren||b.paren||/[0-9\u0660-\u0669]/.test(a.text+b.text))){
+          flush();out.push({n:parseFr(strip(a)),d:parseFr(strip(b))});i=b.end;continue;
+        }
+      }
+      if(a&&a.paren){buf+='(';flush();parseFr(a.text.slice(1,-1)).forEach(x=>out.push(x));buf+=')';i=a.end;continue}
+      if(a){buf+=a.text;i=a.end;continue}
+      buf+=s[i++];
+    }
+    flush();return out;
+  }
+  function buildFr(parts){
+    const f=document.createDocumentFragment();
+    parts.forEach(p=>{
+      if(typeof p==='string'){f.appendChild(document.createTextNode(p));return}
+      const fr=document.createElement('span');fr.className='frac';
+      const n=document.createElement('span');n.className='fn';n.appendChild(buildFr(p.n));
+      const sl=document.createElement('span');sl.className='fs';sl.textContent='/';
+      const d=document.createElement('span');d.className='fd';d.appendChild(buildFr(p.d));
+      fr.appendChild(n);fr.appendChild(sl);fr.appendChild(d);f.appendChild(fr);
+    });
+    return f;
+  }
+  function stackFractions(root){
+    const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),list=[];
+    while(tw.nextNode()){const n=tw.currentNode;if(n.nodeValue.indexOf('/')>-1&&!(n.parentElement&&n.parentElement.closest('.frac')))list.push(n)}
+    list.forEach(n=>{const parts=parseFr(n.nodeValue);if(parts.some(x=>typeof x!=='string'))n.parentNode.replaceChild(buildFr(parts),n)});
+  }
   function mark(){
     raf=0;
     if(!isMath())return;
     main.querySelectorAll('[dir="ltr"]:not(.mx)').forEach(el=>{
       el.classList.add('mx');
-      isolateArabic(el);
+      stackFractions(el);
+      /* المعادلات العربية (بلا حروف لاتينية) تُعرض من اليمين لليسار كما في الكتب: السالبة يمين الرقم */
+      if(!/[A-Za-z]/.test(el.textContent||''))el.setAttribute('dir','rtl');
+      else isolateArabic(el);
       if((el.textContent||'').trim().length>=5)el.classList.add('mx-z');
     });
   }
