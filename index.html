@@ -177,6 +177,22 @@ label.opt .mx-z{cursor:inherit;border-bottom:0}
 .frac>.fd{padding:.08em .3em 0}
 .fs{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media print{.mx{overflow:visible!important;white-space:normal!important;border:0!important}.mx-ov{display:none!important}}
+/* ===== اللغة الإنجليزية: عزل الإنجليزي داخل العربي + تنظيم الإجابات ===== */
+.kw{margin:8px 0}
+.kb{margin:6px 0;line-height:1.9}
+.kb[dir="ltr"]{text-align:left}
+.kb[dir="rtl"]{text-align:right}
+.kh{font-weight:700;color:var(--g);margin:10px 0 6px;line-height:1.8}
+.kh[dir="ltr"]{text-align:left}
+.kl{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.ai{direction:ltr;display:flex;gap:10px;align-items:flex-start;background:#faf7ee;border:1px solid #e7dfcb;border-radius:12px;padding:8px 10px}
+.an{flex:none;min-width:1.9em;height:1.9em;border-radius:50%;background:var(--g);color:#fff;text-align:center;line-height:1.9em;font-weight:700;font-size:.85em}
+.ab{flex:1;min-width:0}
+.ae{direction:ltr;text-align:left;font-weight:600;line-height:1.7}
+.aa{direction:rtl;text-align:right;color:var(--mut);margin-top:3px;line-height:1.8}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.qh{display:block;font-size:.88em;color:var(--mut);margin-top:3px;font-weight:400}
+.nw{white-space:nowrap}
 </style>
 <style id="quran-g9-font-style">
 @font-face{font-family:QuranG9Amiri;src:url('fonts/quran-g9-amiri.ttf') format('truetype');font-display:swap}
@@ -5138,6 +5154,176 @@ const Quiz = {
     openOv(el);
   });
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOv()});
+})();
+/* ===== اللغة الإنجليزية: عزل مقاطع الإنجليزي (علامات الترقيم في مكانها) + تنظيم الإجابات ===== */
+(function(){
+  const main=document.getElementById('main');
+  if(!main)return;
+  const isEn=()=>{let id='';try{id=App.view?(App.view.s||''):((App.cur&&App.cur.l)||'')}catch(e){}return /english/i.test(id)};
+  const cnt=(s,re)=>(s.match(re)||[]).length;
+  const hasAr=s=>/[\u0621-\u064A]/.test(s), hasLa=s=>/[A-Za-z]/.test(s);
+  const latDom=s=>cnt(s,/[A-Za-z]/g)>=cnt(s,/[\u0621-\u064A]/g);
+  const mk=(tag,cls,txt,dir)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(dir)e.setAttribute('dir',dir);if(txt!=null)e.textContent=txt;return e};
+
+  /* ---------- 1) عزل مقاطع الإنجليزي داخل النص العربي ---------- */
+  const LAT_RUN=/(?:[“‘"'(\[]+)?[A-Za-z][A-Za-z0-9\u2019'’“”‘"()\[\]\/&%+=.,;:?!\u2026\-\u2013\u2014\u00B7|\u00A0 £$€°]*/g;
+  const SKIP='[dir="ltr"],bdi,script,style,textarea,select,option,svg,.sr';
+  function wrapLatin(n){
+    const t=n.nodeValue;let last=0,m,f=null;
+    LAT_RUN.lastIndex=0;
+    while((m=LAT_RUN.exec(t))){
+      let s=m.index,e=s+m[0].length;
+      while(e>s&&/[ \u00A0\u2014\u00B7|]/.test(t[e-1]))e--;
+      let seg=t.slice(s,e);
+      const o=cnt(seg,/\(/g),c=cnt(seg,/\)/g);
+      let k=c-o;while(k>0&&t[e-1]===')'){e--;k--}
+      k=o-c;while(k>0&&t[s]==='('){s++;k--}
+      seg=t.slice(s,e);
+      const q1=cnt(seg,/“/g),q2=cnt(seg,/”/g);
+      let kq=q2-q1;while(kq>0&&t[e-1]==='”'){e--;kq--}
+      kq=q1-q2;while(kq>0&&t[s]==='“'){s++;kq--}
+      if(e<=s||!hasLa(t.slice(s,e)))continue;
+      if(!f)f=document.createDocumentFragment();
+      if(s>last)f.appendChild(document.createTextNode(t.slice(last,s)));
+      const b=document.createElement('bdi');b.setAttribute('dir','ltr');b.textContent=t.slice(s,e);if(e-s<=22)b.className='nw';f.appendChild(b);
+      last=e;
+    }
+    if(!f)return;
+    if(last<t.length)f.appendChild(document.createTextNode(t.slice(last)));
+    n.parentNode.replaceChild(f,n);
+  }
+  /* العكس: مقاطع عربية داخل كتلة إنجليزية (LTR) */
+  const AR_RUN=/[\u0621-\u0652\u0660-\u0669\u060C\u061B\u061F]+(?:[ \u00A0]+[\u0621-\u0652\u0660-\u0669\u060C\u061B\u061F]+)*[.:!]*/g;
+  function wrapArabicIn(root){
+    const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),list=[];
+    while(tw.nextNode()){const n=tw.currentNode;if(/[\u0600-\u06FF]/.test(n.nodeValue)&&!(n.parentElement&&n.parentElement.closest('bdi')))list.push(n)}
+    list.forEach(n=>{
+      const t=n.nodeValue;let last=0,m,f=document.createDocumentFragment();
+      AR_RUN.lastIndex=0;
+      while((m=AR_RUN.exec(t))){
+        if(m.index>last)f.appendChild(document.createTextNode(t.slice(last,m.index)));
+        const b=document.createElement('bdi');b.setAttribute('dir','rtl');b.textContent=m[0];f.appendChild(b);
+        last=m.index+m[0].length;
+      }
+      if(last<t.length)f.appendChild(document.createTextNode(t.slice(last)));
+      n.parentNode.replaceChild(f,n);
+    });
+  }
+
+  /* ---------- 2) تنظيم فقرات الإجابات النموذجية ---------- */
+  function splitDash(s){
+    const i=s.indexOf(' — ');if(i<0)return null;
+    const a=s.slice(0,i),b=s.slice(i+3);
+    return (hasLa(a)&&hasAr(b))?[a,'— '+b]:null;
+  }
+  function markers(t){
+    const out=[];let pos=0,n=0;
+    for(;;){
+      const re=new RegExp('(?:^|\\s)('+(n+1)+')(?=\\s+[^\\d\\s])','g');re.lastIndex=pos;
+      const m=re.exec(t);if(!m)break;
+      const s=m.index+m[0].length-m[1].length;
+      out.push({n:n+1,s:s,e:s+m[1].length});pos=s+m[1].length;n++;
+    }
+    return out;
+  }
+  const TAIL=/\.\s+(?=(?:تُقبل|يُراجع|ملاحظة|Note:))/;
+  function pairs(t){
+    const ms=markers(t);if(ms.length<2)return null;
+    const last=ms[ms.length-1];
+    const re1=/(?:^|\s)1(?=\s+[^\d\s])/g;re1.lastIndex=last.e;if(re1.test(t))return null;
+    const head=t.slice(0,ms[0].s).trim();
+    const items=ms.map((m,k)=>({n:m.n,seg:t.slice(m.e,k+1<ms.length?ms[k+1].s:t.length).trim()}));
+    let tail='';
+    const li=items[items.length-1],tm=TAIL.exec(li.seg);
+    if(tm){tail=li.seg.slice(tm.index+1).trim();li.seg=li.seg.slice(0,tm.index+1).trim()}
+    const parsed=items.map(it=>({n:it.n,pr:splitDash(it.seg)}));
+    if(parsed.some(x=>!x.pr))return null;
+    return {head:head,items:parsed,tail:tail};
+  }
+  function eqList(t){
+    const m=/^([^=]*?:)\s(.+)$/.exec(t);if(!m)return null;
+    const parts=m[2].split(' / ');if(parts.length<3)return null;
+    const items=parts.map(p=>{const i=p.indexOf(' = ');if(i<0)return null;const a=p.slice(0,i),b=p.slice(i+1);return(hasLa(a)&&hasAr(b))?[a,b]:null});
+    if(items.some(x=>!x))return null;
+    return {head:m[1],items:items};
+  }
+  function row(num,en,ar,sep){
+    const r=mk('div','ai');
+    if(num!=null)r.appendChild(mk('span','an',String(num)));
+    const b=mk('div','ab');
+    b.appendChild(mk('div','ae',en,'ltr'));
+    b.appendChild(mk('div','aa',ar,'rtl'));
+    if(sep)b.appendChild(mk('span','sr',sep));
+    r.appendChild(b);return r;
+  }
+  function textBlock(txt,cls){
+    const d=mk('div',cls||'kb',txt,latDom(txt)?'ltr':'rtl');
+    return d;
+  }
+  function structure(p){
+    p.classList.add('kd');
+    if(Array.prototype.some.call(p.childNodes,n=>n.nodeType!==3))return;
+    const t=(p.textContent||'').replace(/\s+/g,' ').trim();
+    if(!t)return;
+    let label='',rest=t;
+    const lm=/^([A-Z]\s—\s)/.exec(t);if(lm){label=lm[1];rest=t.slice(label.length)}
+    const w=mk('div','kw');
+    const pr=pairs(rest);
+    if(pr){
+      w.appendChild(textBlock(label+pr.head,'kh'));
+      const l=mk('div','kl');pr.items.forEach(it=>l.appendChild(row(it.n,it.pr[0],it.pr[1])));w.appendChild(l);
+      if(pr.tail)w.appendChild(textBlock(pr.tail));
+    }else{
+      const eq=eqList(rest);
+      if(eq){
+        w.appendChild(textBlock(label+eq.head,'kh'));
+        const l=mk('div','kl');
+        eq.items.forEach((it,i)=>l.appendChild(row(null,it[0],it[1],i<eq.items.length-1?' / ':'')));w.appendChild(l);
+      }else{
+        const parts=[];rest.split(' — ').forEach((x,i)=>{x.split(/\s(?=Full text:|النص المكتمل|الترجمة:|الإجابات:|Note:)/).forEach((y,k)=>parts.push({t:y,first:i===0&&k===0,dash:i>0&&k===0}))});
+        parts.forEach((x,i)=>{
+          const txt=(x.first?label:'')+(x.dash?'— ':'')+x.t;
+          w.appendChild(textBlock(txt));
+        });
+      }
+    }
+    w.querySelectorAll('[dir="ltr"]').forEach(e=>wrapArabicIn(e));
+    p.replaceWith(w);
+  }
+
+  /* ---------- 3) الأسئلة والخيارات: التلميح العربي في سطر مستقل ---------- */
+  function splitHint(el){
+    el.setAttribute('data-h','1');
+    for(const n of Array.prototype.slice.call(el.childNodes)){
+      if(n.nodeType!==3||!n.nodeValue.trim())continue;
+      const raw=n.nodeValue,pr=splitDash(raw.trim());
+      if(!pr)return;
+      const lead=raw.match(/^\s*/)[0];
+      const f=document.createDocumentFragment();
+      f.appendChild(document.createTextNode(lead+raw.trim().slice(0,raw.trim().indexOf(' — '))+' '));
+      f.appendChild(mk('span','qh',pr[1]));
+      n.parentNode.replaceChild(f,n);
+      return;
+    }
+  }
+
+  let raf=0;
+  function mark(){
+    raf=0;
+    if(!isEn())return;
+    main.querySelectorAll('p[style*="line-height:1.9"]:not(.kd)').forEach(structure);
+    main.querySelectorAll('.q:not([data-h]),.opt:not([data-h])').forEach(splitHint);
+    const tw=document.createTreeWalker(main,NodeFilter.SHOW_TEXT),list=[];
+    while(tw.nextNode()){
+      const n=tw.currentNode;
+      if(!/[A-Za-z]/.test(n.nodeValue))continue;
+      const pe=n.parentElement;
+      if(!pe||pe.closest(SKIP))continue;
+      list.push(n);
+    }
+    list.forEach(wrapLatin);
+  }
+  new MutationObserver(()=>{if(!raf)raf=requestAnimationFrame(mark)}).observe(main,{childList:true,subtree:true});
 })();
 
 App.init();
