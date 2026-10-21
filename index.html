@@ -193,6 +193,7 @@ label.opt .mx-z{cursor:inherit;border-bottom:0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .qh{display:block;font-size:.88em;color:var(--mut);margin-top:3px;font-weight:400}
 .nw{white-space:nowrap}
+.li-en{display:block;text-align:right}
 </style>
 <style id="quran-g9-font-style">
 @font-face{font-family:QuranG9Amiri;src:url('fonts/quran-g9-amiri.ttf') format('truetype');font-display:swap}
@@ -5166,22 +5167,26 @@ const Quiz = {
   const mk=(tag,cls,txt,dir)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(dir)e.setAttribute('dir',dir);if(txt!=null)e.textContent=txt;return e};
 
   /* ---------- 1) عزل مقاطع الإنجليزي داخل النص العربي ---------- */
-  const LAT_RUN=/(?:[“‘"'(\[]+)?[A-Za-z][A-Za-z0-9\u2019'’“”‘"()\[\]\/&%+=.,;:?!\u2026\-\u2013\u2014\u00B7|\u00A0 £$€°]*/g;
-  const SKIP='[dir="ltr"],bdi,script,style,textarea,select,option,svg,.sr';
+  const LAT_RUN=/(?:\d+(?:\.\d+)?[ \u00A0]+)?(?:[“‘"'(\[]+)?[A-Za-z][A-Za-z0-9\u2019'’“”‘"()\[\]\/&%+=.,;:?!_<>^~#@{}*\u00D7\u00F7\u2260\u2264\u2265\u2192\u2190\u2026\-\u2013\u2014\u00B7|\u00A0 £$€°]*/g;
+  const SKIP='[dir="ltr"],bdi,script,style,textarea,select,option,svg,code,pre,kbd,.mx,.sr';
   function wrapLatin(n){
     const t=n.nodeValue;let last=0,m,f=null;
     LAT_RUN.lastIndex=0;
     while((m=LAT_RUN.exec(t))){
       let s=m.index,e=s+m[0].length;
-      while(e>s&&/[ \u00A0\u2014\u00B7|]/.test(t[e-1]))e--;
-      let seg=t.slice(s,e);
-      const o=cnt(seg,/\(/g),c=cnt(seg,/\)/g);
-      let k=c-o;while(k>0&&t[e-1]===')'){e--;k--}
-      k=o-c;while(k>0&&t[s]==='('){s++;k--}
-      seg=t.slice(s,e);
-      const q1=cnt(seg,/“/g),q2=cnt(seg,/”/g);
-      let kq=q2-q1;while(kq>0&&t[e-1]==='”'){e--;kq--}
-      kq=q1-q2;while(kq>0&&t[s]==='“'){s++;kq--}
+      const TR=/[ \u00A0\u2014\u00B7|=+\/&%\-\u2013*<>^~\u00D7\u00F7\u2260\u2264\u2265\u2192\u2190]/;
+      const trim=()=>{while(e>s&&TR.test(t[e-1]))e--};
+      trim();
+      /* موازنة الأقواس وعلامات الاقتباس: ما لا زوج له داخل المقطع يبقى خارجه */
+      for(let g=0;g<8;g++){
+        const seg=t.slice(s,e);
+        const o=cnt(seg,/\(/g),c=cnt(seg,/\)/g),q1=cnt(seg,/“/g),q2=cnt(seg,/”/g);
+        if(o>c){if(t[s]==='(')s++;else if(t[e-1]==='('){e--;trim()}else break}
+        else if(c>o){let k2=e;while(k2>s&&/[.,;:!?\u2026]/.test(t[k2-1]))k2--;if(t[k2-1]===')'){e=k2-1;trim()}else if(t[s]===')')s++;else break}
+        else if(q1>q2){if(t[s]==='“')s++;else if(t[e-1]==='“'){e--;trim()}else break}
+        else if(q2>q1){let k2=e;while(k2>s&&/[.,;:!?\u2026]/.test(t[k2-1]))k2--;if(t[k2-1]==='”'){e=k2-1;trim()}else if(t[s]==='”')s++;else break}
+        else break;
+      }
       if(e<=s||!hasLa(t.slice(s,e)))continue;
       if(!f)f=document.createDocumentFragment();
       if(s>last)f.appendChild(document.createTextNode(t.slice(last,s)));
@@ -5212,9 +5217,14 @@ const Quiz = {
 
   /* ---------- 2) تنظيم فقرات الإجابات النموذجية ---------- */
   function splitDash(s){
-    const i=s.indexOf(' — ');if(i<0)return null;
-    const a=s.slice(0,i),b=s.slice(i+3);
-    return (hasLa(a)&&hasAr(b))?[a,'— '+b]:null;
+    /* الفاصل هو آخر « — » يكون ما بعده عربيًا (التلميح/الترجمة) وما قبله إنجليزيًا؛ فقد تأتي شرطة داخل الاقتباس الإنجليزي نفسه */
+    let i=s.lastIndexOf(' — ');
+    while(i>=0){
+      const a=s.slice(0,i),b=s.slice(i+3);
+      if(hasLa(a)&&hasAr(b)&&cnt(b,/[A-Za-z]/g)<=cnt(b,/[\u0621-\u064A]/g))return [a,'— '+b];
+      i=i>0?s.lastIndexOf(' — ',i-1):-1;
+    }
+    return null;
   }
   function markers(t){
     const out=[];let pos=0,n=0;
@@ -5300,19 +5310,38 @@ const Quiz = {
       if(!pr)return;
       const lead=raw.match(/^\s*/)[0];
       const f=document.createDocumentFragment();
-      f.appendChild(document.createTextNode(lead+raw.trim().slice(0,raw.trim().indexOf(' — '))+' '));
+      f.appendChild(document.createTextNode(lead+pr[0]+' '));
       f.appendChild(mk('span','qh',pr[1]));
       n.parentNode.replaceChild(f,n);
       return;
     }
   }
 
+  const isMathS=()=>{let id='';try{id=App.view?(App.view.s||''):((App.cur&&App.cur.l)||'')}catch(e){}return /math/i.test(id)};
+  /* عناصر dir=ltr فيها كلام عربي: العربي الغالب يُعرض من اليمين، وغيره يبقى LTR مع عزل المقاطع العربية */
+  function fixLtr(){
+    main.querySelectorAll('[dir="ltr"]:not(bdi):not([data-lf]):not(.mx):not(.kb):not(.kh):not(.ae):not(.aa)').forEach(el=>{
+      el.setAttribute('data-lf','1');
+      const t=el.textContent||'';
+      const ar=cnt(t,/[\u0621-\u064A]/g);
+      if(!ar)return;
+      const lt=cnt(t,/[A-Za-z0-9]/g);
+      if(ar>lt)el.setAttribute('dir','rtl');
+      else wrapArabicIn(el);
+    });
+  }
   let raf=0;
   function mark(){
     raf=0;
-    if(!isEn())return;
-    main.querySelectorAll('p[style*="line-height:1.9"]:not(.kd)').forEach(structure);
-    main.querySelectorAll('.q:not([data-h]),.opt:not([data-h])').forEach(splitHint);
+    if(isEn()){
+      main.querySelectorAll('p[style*="line-height:1.9"]:not(.kd)').forEach(structure);
+      main.querySelectorAll('.q:not([data-h]),.opt:not([data-h])').forEach(splitHint);
+      main.querySelectorAll('li>span[dir="ltr"]:first-child:not(.li-en)').forEach(sp=>{
+        const nx=sp.nextSibling;
+        if(nx&&((nx.nodeType===3&&/^\s*\u2014/.test(nx.nodeValue))||(nx.nodeType===1&&nx.tagName==='BR')))sp.classList.add('li-en');
+      });
+    }
+    if(!isMathS())fixLtr();
     const tw=document.createTreeWalker(main,NodeFilter.SHOW_TEXT),list=[];
     while(tw.nextNode()){
       const n=tw.currentNode;
